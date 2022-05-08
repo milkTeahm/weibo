@@ -1,0 +1,21 @@
+html,body {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+body {
+    padding: 0px;
+    margin: auto;
+    font-family: "黑体", "仿宋", Arial, "Arial Unicode MS", System;
+    font-size: 20px;
+    text-align: left;
+}
+
+.formDiv {
+    height: 50px;
+    width:800px;
+    text-align: left;
+    margin: auto
+}

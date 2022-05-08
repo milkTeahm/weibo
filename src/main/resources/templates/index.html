@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>微博扫码获取SUB</title>
+    <link href="static/css/index.css" rel="stylesheet">
+    <script src="static/js/jquery.min.js"></script>
+</head>
+<body>
+<div style="width: 100%;text-align: center;margin-top: 50px;">
+    <div style="height: 40px;font-size: 20px;font-weight: bold;">
+        微博扫码获取SUB
+    </div>
+    <div class="formDiv" >
+        <button onclick="getImage()">获取登陆二维码</button>
+        <span class="msg" id="error" style="display: none;color: red">二维码失效，请重新获取！</span>
+        <span class="msg" id="info" style="display: none;color: green">已扫码，请在手机上确认！</span>
+    </div>
+    <div class="formDiv" style="height: 200px;" >
+        <img id="qrCode">
+    </div>
+    <div class="formDiv" >
+        <span>UID：</span><span id="uid" class="result"></span>
+    </div>
+    <div class="formDiv" >
+        <span>SUB(gsid)：</span><span id="sub" class="result"></span>
+    </div>
+</div>
+</body>
+<script>
+    var imageData = null;
+    var checkData = null;
+    var timeOut = null;
+    function getImage() {
+        $.ajax({
+            url: "getImage",
+            type: "get",
+            data: {},
+            success: function(data) {
+                if(data) {
+                    imageData = data;
+                    $("#qrCode").attr("src",data.image);
+                    $("#sendResult").html(data);
+                    $(".result").text("");
+                    check();
+                }
+            },
+            error: function(e) {
+                $("#sendResult").html("请求失败！</br>" + JSON.stringify(e));
+            }
+        })
+    }
+
+    function check() {
+        $.ajax({
+            url: "check",
+            type: "get",
+            data: {qrid: imageData.qrid},
+            success: function(data) {
+                if(data) {
+                    checkData = data.data;
+                    $(".msg").hide();
+                    if(data.retcode == 50114001) {
+                        // 2秒检查一次二维码状态
+                        timeOut = setTimeout(function() {
+                            check();
+                        }, 2000)
+                    }else if(data.retcode == 50114004) {
+                        // 失效
+                        $("#error").show();
+                    }else if(data.retcode == 50114002) {
+                        // 扫码，等待登陆
+                        $("#info").text("已扫码，请在手机上确认！").show();
+                        // 2秒检查一次二维码状态
+                        timeOut = setTimeout(function() {
+                            check();
+                        }, 2000)
+                    }else if(data.retcode == 20000000) {
+                        // 成功登陆，获取cookie
+                        getCookie();
+                    }
+                    $("#qrCode").attr("src",data.image);
+                    $("#sendResult").html(data);
+                }
+            },
+            error: function(e) {
+                $("#sendResult").html("请求失败！</br>" + JSON.stringify(e));
+            }
+        })
+
+        function getCookie() {
+            $.ajax({
+                url: "getCookie",
+                type: "get",
+                data: {"alt": checkData.alt},
+                success: function(data) {
+                    if(data) {
+                        console.log(data);
+                        $("#info").text(data.nick + "    登录成功").show();
+                        $("#uid").text(data.uid);
+                        var cookies = data.cookies;
+                        for(var i = 0;i < cookies.length;i++) {
+                            var cookie = cookies[i].split("=");
+                            if(cookie[0] == "SUB") {
+                                $("#sub").text(cookie[1].split(";")[0]);
+                            }
+                        }
+
+                    }
+                },
+                error: function(e) {
+                    $("#sendResult").html("请求失败！</br>" + JSON.stringify(e));
+                }
+            })
+        }
+    }
+</script>
+</html>
